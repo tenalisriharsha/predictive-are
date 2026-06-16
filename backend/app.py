@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 from prometheus_api_client import PrometheusConnect
 from prometheus_api_client.utils import parse_datetime
 import pandas as pd
@@ -6,6 +7,7 @@ from prophet import Prophet
 import os
 
 app = Flask(__name__)
+CORS(app)
 
 # Connect to Prometheus (running in your cluster via port-forward)
 prom = PrometheusConnect(url="http://localhost:9090", disable_ssl=True)
@@ -16,10 +18,6 @@ def health():
 
 @app.route('/predict/memory/<pod_name>')
 def predict_memory(pod_name):
-    """
-    Fetch memory metrics for a pod and forecast 30 minutes ahead.
-    """
-    # Query Prometheus for last 30 minutes of memory data
     query = f'container_memory_working_set_bytes{{pod="{pod_name}"}}'
     
     try:
@@ -33,25 +31,19 @@ def predict_memory(pod_name):
         if not metric_data:
             return jsonify({"error": f"No data found for pod {pod_name}"}), 404
         
-        # Convert to DataFrame for Prophet
-        # Prometheus returns: {'metric': {...}, 'values': [[timestamp, value], ...]}
         values = metric_data[0]['values']
         df = pd.DataFrame(values, columns=['ds', 'y'])
         df['ds'] = pd.to_datetime(df['ds'], unit='s')
         df['y'] = pd.to_numeric(df['y'])
         
-        # Fit Prophet model
         m = Prophet()
         m.fit(df)
         
-        # Predict 30 minutes ahead
         future = m.make_future_dataframe(periods=30, freq='min')
         forecast = m.predict(future)
         
-        # Get the prediction for 30 minutes from now
         prediction = forecast.tail(1)[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')[0]
         
-        # Calculate percentage of typical limit (128Mi = 134217728 bytes)
         limit = 134217728
         percent_predicted = (prediction['yhat'] / limit) * 100
         
