@@ -21,6 +21,7 @@
     }
   ],
   "cursorSync": "Off",
+  "description": "AI-powered incident prediction platform monitoring nginx pod memory usage in real-time",
   "editable": true,
   "elements": {
     "panel-1": {
@@ -56,10 +57,10 @@
             "transformations": []
           }
         },
-        "description": "AI-powered incident prediction platform monitoring nginx pod memory usage in real-time",
+        "description": "Real-time memory usage for nginx pods in the sre-learning namespace",
         "id": 1,
         "links": [],
-        "title": "New panel",
+        "title": "Nginx Pod Memory Usage",
         "vizConfig": {
           "group": "timeseries",
           "kind": "VizConfig",
